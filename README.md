@@ -12,6 +12,15 @@ _If you do not need Kanji mode, use [qrcode.light.min.js](qrcode.light.min.js), 
 
 <br>
 
+## Lightweight Alternatives
+
+If you don't need Kanji support, these alternatives offer smaller bundles with the same API:
+
+| File / Repository | Optimal Segmentation | Bundle Size Reduction |
+| :--- | :---: | :--- |
+| [qrcode.light.min.js](qrcode.light.min.js) | Yes | Omits the 14 KB Kanji lookup table |
+| [qrcode-svg](https://github.com/datalog/qrcode-svg) | No | Omits Kanji support and segmentation logic |
+
 ## Quick start
 
 Download [qrcode.js](qrcode.js), include it in your HTML page, and append the returned SVG element:
