@@ -8,7 +8,7 @@ Explore the [live demo](https://datalog.github.io/demo/qrcode-generator/): enter
 
 ---
 
-_If you do not need Kanji mode or the extra space savings from mixed segments, [qrcode-svg](https://github.com/datalog/qrcode-svg) offers a lighter alternative with the same API._
+_If you do not need Kanji mode, use [qrcode.light.min.js](qrcode.light.min.js), which retains optimal segmentation. For an even lighter alternative with the same API, [qrcode-svg](https://github.com/datalog/qrcode-svg) uses a single encoding mode for the entire message and omits Kanji support._
 
 <br>
 
