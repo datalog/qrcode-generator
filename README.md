@@ -11,6 +11,7 @@ Enter your text, adjust the settings and explore your QR Code.
 
 *For a smaller bundle, [qrcode.light.min.js](qrcode.light.min.js) leaves out Kanji support while retaining optimal segmentation. If single-mode encoding is enough, [qrcode-svg](https://github.com/datalog/qrcode-svg) is smaller still. Both provide the same API.*
 
+<br>
 
 <p align="center"><a href="https://datalog.github.io/demo/qrcode-generator/"><img
     src="https://datalog.github.io/demo/qrcode-generator/find-joy-in-creating.svg"
