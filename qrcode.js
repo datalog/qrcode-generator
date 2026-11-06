@@ -363,8 +363,10 @@ function QRCode( Q ) {
 			return countPatterns( history );
 		}
 
-		var penalty = 0 ,area = qrSize * qrSize ,darkCount = 0 ,row = qrSize ,col;
-		var rowHistory ,colHistory ,rowColor ,colColor ,rowRun ,colRun ,module;
+		var
+		 penalty = 0 ,area = qrSize * qrSize ,darkCount = 0 ,row = qrSize ,col
+		,rowHistory ,colHistory ,rowColor ,colColor ,rowRun ,colRun ,module
+		,cells ,above ,columnModule;
 
 		while( row-- ) {
 			rowHistory = [ 0, 0, 0, 0, 0, 0, 0 ];
@@ -374,39 +376,41 @@ function QRCode( Q ) {
 			rowRun = 0;
 			colRun = 0;
 			col = qrSize;
+			cells = modules[ row ];
+			above = modules[ row - 1 ];
 
 			while( col-- ) {
-				module = modules[ row ][ col ];
+				module = cells[ col ];
+				columnModule = modules[ col ][ row ];
 				if( module == rowColor ) {
 					if( 5 == ++rowRun ) penalty += 3;
 					else if( rowRun > 5 ) penalty++;
 				} else {
 					addRun( rowRun, rowHistory );
-					penalty += 40 * countPatterns( rowHistory );
+					if( !rowColor ) penalty += 40 * countPatterns( rowHistory );
 					rowRun = 1;
 					rowColor = module;
 				}
 
-				if( modules[ col ][ row ] == colColor ) {
+				if( columnModule == colColor ) {
 					if( 5 == ++colRun ) penalty += 3;
 					else if( colRun > 5 ) penalty++;
 				} else {
 					addRun( colRun, colHistory );
-					penalty += 40 * countPatterns( colHistory );
+					if( !colColor ) penalty += 40 * countPatterns( colHistory );
 					colRun = 1;
-					colColor = modules[ col ][ row ];
+					colColor = columnModule;
 				}
 
 				if( module ) darkCount++;
-				if( col && row && module == modules[ row ][ col - 1 ] &&
-					module == modules[ row - 1 ][ col ] && module == modules[ row - 1 ][ col - 1 ] ) penalty += 3;
+				if( col && row && module == cells[ col - 1 ] &&
+					module == above[ col ] && module == above[ col - 1 ] ) penalty += 3;
 			}
 
 			penalty += 40 * finishRun( rowColor, rowRun, rowHistory ) +
 				40 * finishRun( colColor, colRun, colHistory );
 
-			/* remaining penalties are nonnegative; ties cannot replace the current best mask. */
-			if( penalty >= bestScore ) return penalty;
+			if( penalty >= bestScore ) return penalty; /* this mask cannot improve the score. */
 		}
 
 		return penalty + 10 * ( ceil( abs( 20 * darkCount - 10 * area ) / area ) - 1 );
@@ -560,21 +564,21 @@ function QRCode( Q ) {
 		,rawCodewords = getNumRawDataModules( qrVersion ) / 8 | 0
 		,numShortBlocks = numBlocks - rawCodewords % numBlocks
 		,shortBlockLen = rawCodewords / numBlocks | 0
+		,shortDataLen = shortBlockLen - blockEccLen
 		,blocks = [] ,rsDiv = [] ,dataOffset = 0
 		,dataBlock ,ecc ,result = [];
 
-		/* reed-solomon generator polynomial. */
 		var rootPower = 1 ,i = blockEccLen;
 		rsDiv[ blockEccLen - 1 ] = 1;
 
-		while( i-- ) {
+		while( i-- ) { /* reed-solomon generator polynomial. */
 			for( var j = 0; j < blockEccLen; j++ )
 				rsDiv[ j ] = reedSolomonMultiply( rsDiv[ j ], rootPower ) ^ rsDiv[ j + 1 ];
 			rootPower = reedSolomonMultiply( rootPower, 2 );
 		}
 
 		for( var blockIndex = 0; blockIndex < numBlocks; blockIndex++ ) {
-			dataBlock = data.slice( dataOffset, dataOffset + shortBlockLen - blockEccLen + ( blockIndex < numShortBlocks ? 0 : 1 ) );
+			dataBlock = data.slice( dataOffset, dataOffset + shortDataLen + ( blockIndex < numShortBlocks ? 0 : 1 ) );
 			dataOffset += dataBlock.length;
 			ecc = reedSolomonComputeRemainder( dataBlock, rsDiv );
 			if( blockIndex < numShortBlocks ) dataBlock.push( 0 );
@@ -583,7 +587,7 @@ function QRCode( Q ) {
 
 		for( var i = 0 ,length = blocks[ 0 ].length; i < length; i++ )
 			for( var j = 0; j < numBlocks; j++ )
-				if( i != shortBlockLen - blockEccLen || j >= numShortBlocks ) result.push( blocks[ j ][ i ] );
+				if( i != shortDataLen || j >= numShortBlocks ) result.push( blocks[ j ][ i ] );
 
 		return result;
 	}
@@ -647,7 +651,6 @@ function QRCode( Q ) {
 	,computeCharacterModes = function( points, version, modeData ) { /* costs in sixths of a bit. */
 
 		var length = points.length ,modeCount = MODES.length;
-		if( length > 7089 ) throw new RangeError( 'String too long' );
 
 		var heads = [] ,costFunctions = [] ,history = [] ,previous = [] ,current = [] ,swap;
 		var c ,cost ,rounded ,bestCost ,bestMode ,offset ,mode = 0 ,minimum = Infinity ,result = [];
@@ -676,8 +679,7 @@ function QRCode( Q ) {
 				}
 			}
 
-			/* every destination has the same cheapest source; its header is added afterwards. */
-			for( j = 0; j < modeCount; j++ ) {
+			for( j = 0; j < modeCount; j++ ) { /* add each mode's header to the cheapest source. */
 				cost = bestCost + heads[ j ];
 				if( cost < current[ j ] ) {
 					current[ j ] = cost;
@@ -709,13 +711,17 @@ function QRCode( Q ) {
 
 	,splitIntoSegments = function( points, modes, modeData ) {
 
-		var result = [] ,length = points.length ,mode = modes[ 0 ] ,start = 0 ,segment;
+		var
+		 result = [] ,length = points.length ,mode = modes[ 0 ] ,segment
+		,start = 0 ,i = 0;
 
-		for( var i = 1; ; i++ ) {
+		while( ++i ) {
 			if( i < length && modes[ i ] === mode ) continue;
-			segment = MODES[ mode ].encode( fromCodePoints( points, start, i ), modeData[ mode ] );
-			segment.mbits = MODES[ mode ].mbits;
-			segment.cbits = MODES[ mode ].cbits;
+			var selected = MODES[ mode ];
+
+			segment = selected.encode( fromCodePoints( points, start, i ), modeData[ mode ] );
+			segment.mbits = selected.mbits;
+			segment.cbits = selected.cbits;
 			result.push( segment );
 			if( i >= length ) return result;
 			mode = modes[ i ];
@@ -723,34 +729,39 @@ function QRCode( Q ) {
 		}
 	}
 
-	,makeSegmentsOptimally = function( text, ecc ) {
+	,encodeText = function( text, ecc, boostEcl, mask ) { /* choose segments and version, then encode. */
 
 		if( !ecc ) throw new RangeError( 'Invalid value' );
 
-		var points = toCodePoints( text ) ,length = points.length ,modeCount = MODES.length ,modeData = [] ,segments ,modes;
+		var
+		 points = toCodePoints( text ) ,length = points.length
+		,modeData = [] ,segments ,modes ,totalBits
+		,version = 0 ,i = MODES.length;
 
-		if( length ) for( var i = 0; i < modeCount; i++ ) {
+		if( length > 7089 ) throw new RangeError( 'String too long' );
+
+		if( length ) while( i-- ) {
+
 			if( MODES[ i ].prepare ) modeData[ i ] = MODES[ i ].prepare();
 		}
 
-		for( var version = 1; ; version++ ) {
+		while( ++version ) {
 			if( 1 === version || 10 === version || 27 === version ) {
 				if( !length ) segments = [];
 				else {
 					modes = computeCharacterModes( points, version, modeData );
 					segments = splitIntoSegments( points, modes, modeData );
 				}
+
+				totalBits = getTotalBits( segments, version );
 			}
 
-			if( getTotalBits( segments, version ) <= getNumDataCodewords( version, ecc ) * 8 ) return segments;
+			if( totalBits <= getNumDataCodewords( version, ecc ) * 8 )
+				return encodeSegments( segments, ecc, boostEcl, mask, version, totalBits );
 			if( version >= 40 ) throw new RangeError( 'Data too long' );
 		}
 	}
 
-	,encodeText = function( text, ecc, boostEcl, mask ) { /* optimize modes and encode all segments. */
-
-		return encodeSegments( makeSegmentsOptimally( text, ecc ), ecc, boostEcl, mask );
-	}
 
 	,encodeMatrix = function( version, ecc, data, mask ) { /* build matrix and select mask. */
 
@@ -807,20 +818,13 @@ function QRCode( Q ) {
 		isFunction = [];
 	}
 
-	,encodeSegments = function( segments, ecc, boostEcl, mask ) { /* select version, pad payload and encode. */
+	,encodeSegments = function( segments, ecc, boostEcl, mask, version, totalBits ) { /* pad payload and encode. */
 
 		if( undefined === mask ) mask = - 1;
 		if( mask < - 1 || mask > 7 ) throw "Invalid value";
 
-		var bits = [] ,bytes = [] ,padByte = 236 ,version = 1 ,totalBits ,capacity;
+		var bits = [] ,bytes = [] ,padByte = 236 ,capacity;
 		var i ,segment ,segmentBits ,segmentCount = segments.length ,segmentBitCount ,levels;
-
-		while( !0 ) {
-			totalBits = getTotalBits( segments, version );
-			if( totalBits <= 8 * getNumDataCodewords( version, ecc ) ) break;
-			if( version >= 40 ) throw "Data too long";
-			version++;
-		}
 
 		if( boostEcl ) {
 			levels = [ eccLevels.H, eccLevels.Q, eccLevels.M ];
@@ -861,6 +865,124 @@ function QRCode( Q ) {
 
 	return ( function() { /* svg generator */
 
+		function contourPath( modules, size ) {
+
+			var
+			 stride = size + 1
+			,edges = []
+			,emptyRow = []
+			,step = [
+				   0        /* 0: no edge */
+				,  1        /* 1: right */
+				,  stride   /* 2: down */
+				,  0        /* 3: unused */
+				, -1        /* 4: left */
+				,  0        /* 5: unused */
+				,  0        /* 6: unused */
+				,  0        /* 7: unused */
+				, -stride   /* 8: up */
+			]
+			,path = ''
+			,y = size
+			,x
+			,v;
+
+			while( y-- ) { /* collect boundary edges with dark modules on the right. */
+
+				var
+				 row = modules[ y ]
+				,above = modules[ y - 1 ] || emptyRow
+				,below = modules[ y + 1 ] || emptyRow
+				,rowStart = y * stride;
+
+				x = size;
+
+				while( x-- ) {
+
+					if( !row[ x ] ) continue;
+
+					v = rowStart + x;
+
+					if( !above[ x ] ) edges[ v ] |= 1;
+					if( !row[ x + 1 ] ) edges[ v + 1 ] |= 2;
+					if( !below[ x ] ) edges[ v + stride + 1 ] |= 4;
+					if( !row[ x - 1 ] ) edges[ v + stride ] |= 8;
+				}
+			}
+
+			var
+			 start = edges.length
+			,prevX = 0
+			,prevY = 0;
+
+			while( start-- ) {
+				if( !edges[ start ] ) continue;
+
+				var
+				 startX = start % stride
+				,startY = ( start / stride ) | 0
+				,dx = startX - prevX
+				,dy = startY - prevY;
+
+				path += 'm' + dx + ( dy < 0 ? '' : ',' ) + dy;
+				prevX = startX;
+				prevY = startY;
+
+				var
+				 stack = [ start ]
+				,route = []
+				,previous = start
+				,previousStep = 0;
+
+				while( stack.length ) { /* join branches into one closed route. */
+
+					var
+					 at = stack[ stack.length - 1 ]
+					,mask = edges[ at ];
+
+					if( !mask ) {
+
+						var
+						 vertex = stack.pop()
+						,delta = vertex - previous;
+
+						if( delta !== previousStep )
+							route.push( previous );
+
+						previousStep = delta;
+						previous = vertex;
+						continue;
+					}
+
+					var edge = mask & -mask;
+
+					edges[ at ] = mask ^ edge;
+					stack.push( at + step[ edge ] );
+				}
+
+
+				var
+				 i = route.length
+				,turn = start;
+
+				while( --i ) { /* write turns from the reversed route. */
+
+					var
+					 vertex = route[ i ]
+					,offset = vertex - turn;
+
+					path += -stride < offset && offset < stride
+						? 'h' + offset
+						: 'v' + ( offset / stride );
+					turn = vertex;
+				}
+
+				path += 'z';
+			}
+
+			return path;
+		}
+
 		function ishex( c ) {
 
 			return /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test( c );
@@ -879,7 +1001,7 @@ function QRCode( Q ) {
 		}
 
 		var
-		 r ,x ,y ,d
+		 r ,x ,y
 		,ns = 'http://www.w3.org/2000/svg'
 		,path = ''
 		,q = ( 'string' == typeof Q ) ? { msg: Q } : Q || { }
@@ -904,17 +1026,14 @@ function QRCode( Q ) {
 		y = qrSize;
 
 
-
-		while( y-- ) { /* render optimized or verbose svg */
-
-			d = 0, x = qrSize;
-			while( x-- ) {
-				if( modules[ y ][ x ] ) {
-					if( optimized ) {
-						d++;
-						if( !modules[ y ][ x - 1 ] )
-							path += 'M' + x + ',' + y + 'h' + d + 'v1h-' + d + 'v-1z', d = 0;
-					} else path += 'M' + x + ',' + y + 'h1v1h-1v-1z';
+		if( optimized ) {
+			path = contourPath( modules, qrSize );
+		} else {
+			while( y-- ) {
+				x = qrSize;
+				while( x-- ) {
+					if( modules[ y ][ x ] )
+						path += 'M' + x + ',' + y + 'h1v1h-1v-1z';
 				}
 			}
 		}
