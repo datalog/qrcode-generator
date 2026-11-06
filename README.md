@@ -4,7 +4,8 @@ QR Code generator in pure JavaScript with compact SVG output. No dependencies.
 
 The generator analyzes your text and combines Numeric, Alphanumeric, Byte, and Kanji segments to reduce the space needed for encoding. By default, it selects the smallest QR Code version that fits the message, evaluates all eight mask patterns, and boosts error correction without increasing the QR Code size. Pass a string to get an SVG element with the default settings, or use an options object to adjust the appearance and encoding.
 
-Explore the [live demo](https://datalog.github.io/demo/qrcode-generator/): enter your own text, adjust the colors and encoding options, and see the generated SVG.
+### [QR Code Generator](https://datalog.github.io/demo/qrcode-generator/) (Live Demo)
+Enter your text, adjust the settings and explore your QR Code.
 
 ---
 
