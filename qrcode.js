@@ -1,5 +1,5 @@
 /**
-	https://github.com/datalog/qrcode-svg
+	https://github.com/datalog/qrcode-generator
 	under MIT license
 	# qrcode.js has no dependencies
 	Copyright (c) 2020-2026 Constantine
@@ -865,7 +865,7 @@ function QRCode( Q ) {
 
 	return ( function() { /* svg generator */
 
-		function contourPath( modules, size ) {
+		function contourPath( modules, size ) { /* my november's moons and noons */
 
 			var
 			 stride = size + 1
