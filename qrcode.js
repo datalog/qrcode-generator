@@ -1052,7 +1052,7 @@ function QRCode( Q ) {
 		if( bg ) r.appendChild( svg( 'path', {
 
 			 'fill'			:  bg
-			,'d'			: 'M0,0V' + s + 'H' + s + 'V0H0Z'
+			,'d'			: 'M0,0V' + s + 'H' + s + 'V0Z'
 		} ) );
 
 		r.appendChild( svg( 'path', {
