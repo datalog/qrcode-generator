@@ -19,11 +19,11 @@ Enter your text, adjust the settings and explore your QR Code.
 
 ## Quick start
 
-Download [qrcode.js](qrcode.js), include it in your HTML page, and append the returned SVG element:
+Download [qrcode.min.js](qrcode.min.js), include it in your HTML page, and append the returned SVG element.
 
 ```html
 <div id="qrcode"></div>
-<script src="qrcode.js"></script>
+<script src="qrcode.min.js"></script>
 <script>
 
     document.getElementById('qrcode')
