@@ -1033,7 +1033,7 @@ function QRCode( Q ) {
 				x = qrSize;
 				while( x-- ) {
 					if( modules[ y ][ x ] )
-						path += 'M' + x + ',' + y + 'h1v1h-1v-1z';
+						path += 'M' + x + ',' + y + 'h1v1h-1z';
 				}
 			}
 		}
