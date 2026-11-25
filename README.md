@@ -19,7 +19,9 @@ Enter your text, adjust the settings and explore your QR Code.
 
 ## Quick start
 
-Download [qrcode.min.js](qrcode.min.js), include it in your HTML page, and append the returned SVG element.
+### In an HTML page
+
+**SVG element.** Include [qrcode.min.js](qrcode.min.js) and append the returned element to a container.
 
 ```html
 <div id="qrcode"></div>
@@ -32,7 +34,28 @@ Download [qrcode.min.js](qrcode.min.js), include it in your HTML page, and appen
 </script>
 ```
 
-`QRCode(text)` is shorthand for `QRCode({ msg: text })`. Both return a new SVG DOM element.
+**SVG string.** Set `str` to `1` to get SVG markup.
+
+```javascript
+var svgText = QRCode({ msg: 'Hello World!', str: 1 });
+
+document.getElementById('qrcode').innerHTML = svgText;
+```
+
+`QRCode(text)` is shorthand for `QRCode({ msg: text })`. The same options apply to both SVG output modes.
+
+### In Node.js
+
+Set `str` to `1` to generate SVG markup without a DOM library.
+
+```javascript
+var QRCode = require('./qrcode.min.js');
+var fs = require('fs');
+
+var svgText = QRCode({ msg: 'Hello World!', str: 1 });
+
+fs.writeFileSync('qrcode.svg', svgText);
+```
 
 ## Options
 
@@ -49,6 +72,7 @@ var svgNode = QRCode({
     ,ecb :   0
     ,pal : ["#000", "#f2f4f8"]
     ,vrb :   1
+    ,str :   0
 
 });
 
@@ -66,6 +90,7 @@ document.getElementById('qrcode')
 | `ecb` | `1` | Increase error correction when the data still fits the selected QR version. Set to `0` to keep the requested level. |
 | `pal` | `['#000']` | Foreground and optional background colors as `#RGB` or `#RRGGBB`. The background is transparent when omitted. |
 | `vrb` | `0` | Set to `1` to generate a more verbose SVG path, describing each dark module separately. The appearance is unchanged. |
+| `str` | `0` | Set to `1` to return SVG markup as a string. The default returns an SVG DOM element. |
 
 ## Kanji support
 

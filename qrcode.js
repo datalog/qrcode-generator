@@ -988,23 +988,29 @@ function QRCode( Q ) {
 			return /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test( c );
 		}
 
-		function svg( n, a ) {
+		function svg( tag, attrs, children ) {
 
-			n = document.createElementNS( ns, n );
+			var el, o, i = 0, len = children ? children.length : 0;
 
-			for( var o in a || { } ) {
-
-				n.setAttribute( o, a[ o ] );
+			if( str ) {
+				el = '<' + tag;
+				for( o in attrs ) el += ' ' + o + '="' + attrs[ o ] + '"';
+				return len ? el + '>' + children.join( '' ) + '</' + tag + '>' : el + '/>';
 			}
 
-			return n;
+			el = document.createElementNS( ns, tag );
+			for( o in attrs ) el.setAttribute( o, attrs[ o ] );
+			while( i < len ) el.appendChild( children[ i++ ] );
+			return el;
 		}
 
 		var
-		 r ,x ,y
+		 x ,y
 		,ns = 'http://www.w3.org/2000/svg'
 		,path = ''
 		,q = ( 'string' == typeof Q ) ? { msg: Q } : Q || { }
+		,str = q.str
+		,layers = []
 		,p = q.pal || [ '#000' ]
 		,dm = abs( q.dim ) || 256
 		,pd = abs( q.pad )
@@ -1038,7 +1044,20 @@ function QRCode( Q ) {
 			}
 		}
 
-		r = svg('svg', {
+		if( bg )
+		layers.push( svg( 'path', {
+
+			 'fill'			:  bg
+			,'d'			: 'M0,0V' + s + 'H' + s + 'V0Z'
+		} ) );
+
+		layers.push( svg( 'path', {
+
+			 'transform'		: 'matrix(' + mx + ')'
+			,'d'			:  path
+		} ) );
+
+		return svg('svg', {
 
 			 'viewBox'		: [ 0, 0, s, s ].join(' ')
 			,'width'		:  dm
@@ -1047,20 +1066,9 @@ function QRCode( Q ) {
 			,'shape-rendering'	: 'crispEdges'
 			,'xmlns'		:  ns
 			,'version'		: '1.1'
-		} );
-
-		if( bg ) r.appendChild( svg( 'path', {
-
-			 'fill'			:  bg
-			,'d'			: 'M0,0V' + s + 'H' + s + 'V0Z'
-		} ) );
-
-		r.appendChild( svg( 'path', {
-
-			 'transform'		: 'matrix(' + mx + ')'
-			,'d'			:  path
-		} ) );
-
-		return r;
+		}, layers );
 	} )();
 }
+
+if( 'undefined' !== typeof module && module.exports )
+	module.exports = QRCode;
